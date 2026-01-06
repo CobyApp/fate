@@ -10,5 +10,21 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist'
+  },
+  define: {
+    global: 'globalThis',
+  },
+  resolve: {
+    alias: {
+      'aws-amplify/auth': '@aws-amplify/auth'
+    }
+  },
+  optimizeDeps: {
+    include: ['aws-amplify', '@aws-amplify/auth', '@aws-amplify/core'],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis',
+      },
+    },
   }
 })

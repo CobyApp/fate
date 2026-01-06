@@ -73,7 +73,7 @@ const Home = () => {
               {showHistory ? '결과 보기' : '기록 보기'}
             </button>
             <div className="user-info">
-              <span className="user-email">{user?.username || user?.signInDetails?.loginId || '사용자'}</span>
+              <span className="user-email">{user?.username || user?.attributes?.email || '사용자'}</span>
               <button onClick={handleLogout} className="logout-btn">
                 로그아웃
               </button>
@@ -86,7 +86,7 @@ const Home = () => {
         {!showHistory ? (
           <>
             <div className="welcome-section">
-              <h2>안녕하세요, {user?.username || user?.signInDetails?.loginId || '사용자'}님</h2>
+              <h2>안녕하세요, {user?.username || user?.attributes?.email || '사용자'}님</h2>
               <p>생년월일과 생시를 입력하시면 정확한 사주를 분석해드립니다.</p>
             </div>
 

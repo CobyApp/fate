@@ -1,6 +1,5 @@
 import axios from 'axios';
 import config from './config';
-import { fetchAuthSession } from 'aws-amplify/auth';
 
 const api = axios.create({
   baseURL: config.baseURL,
@@ -11,18 +10,19 @@ const api = axios.create({
 
 // 요청 인터셉터: 인증 토큰 추가
 api.interceptors.request.use(
-  async (config) => {
+  async (requestConfig) => {
     try {
-      const session = await fetchAuthSession();
-      const token = session.tokens?.idToken?.toString();
+      const { Auth } = await import('aws-amplify');
+      const session = await Auth.currentSession();
+      const token = session.getIdToken().getJwtToken();
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        requestConfig.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
       // 인증 토큰을 가져올 수 없어도 요청은 계속 진행
       console.warn('인증 토큰을 가져올 수 없습니다:', error);
     }
-    return config;
+    return requestConfig;
   },
   (error) => {
     return Promise.reject(error);

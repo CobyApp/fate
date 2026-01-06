@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { signIn, signUp, signOut, getCurrentUser, confirmSignUp, resendSignUpCode, fetchAuthSession } from 'aws-amplify/auth';
+import { Auth } from 'aws-amplify';
 
 const AuthContext = createContext(null);
 
@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = async () => {
     try {
-      const currentUser = await getCurrentUser();
+      const currentUser = await Auth.currentAuthenticatedUser();
       setUser(currentUser);
       setError(null);
     } catch (err) {
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      await signIn({ username: email, password });
+      await Auth.signIn(email, password);
       await checkUser();
       return { success: true };
     } catch (err) {
@@ -51,14 +51,12 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, name) => {
     try {
       setError(null);
-      await signUp({
+      await Auth.signUp({
         username: email,
         password,
-        options: {
-          userAttributes: {
-            email,
-            name: name || email,
-          },
+        attributes: {
+          email,
+          name: name || email,
         },
       });
       return { success: true, email };
@@ -73,7 +71,7 @@ export const AuthProvider = ({ children }) => {
   const confirmRegistration = async (email, confirmationCode) => {
     try {
       setError(null);
-      await confirmSignUp({ username: email, confirmationCode });
+      await Auth.confirmSignUp(email, confirmationCode);
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || '인증 코드가 올바르지 않습니다.';
@@ -86,7 +84,7 @@ export const AuthProvider = ({ children }) => {
   const resendCode = async (email) => {
     try {
       setError(null);
-      await resendSignUpCode({ username: email });
+      await Auth.resendSignUp(email);
       return { success: true };
     } catch (err) {
       const errorMessage = err.message || '인증 코드 재전송에 실패했습니다.';
@@ -99,7 +97,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       setError(null);
-      await signOut();
+      await Auth.signOut();
       setUser(null);
       return { success: true };
     } catch (err) {
@@ -112,8 +110,8 @@ export const AuthProvider = ({ children }) => {
   // 인증 토큰 가져오기
   const getAuthToken = async () => {
     try {
-      const session = await fetchAuthSession();
-      return session.tokens?.idToken?.toString() || null;
+      const session = await Auth.currentSession();
+      return session.getIdToken().getJwtToken() || null;
     } catch (err) {
       return null;
     }
