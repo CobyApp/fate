@@ -1,0 +1,9 @@
+{
+  "name": "fate-calculator",
+  "version": "1.0.0",
+  "description": "Lambda function for calculating fate",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1500.0"
+  }
+}

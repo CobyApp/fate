@@ -57,10 +57,14 @@ npm run build
    배포 완료 후 출력되는 `ApiUrl`을 복사하세요.
 
 2. **환경 변수 설정**
-   프로젝트 루트에 `.env` 파일을 생성하고 API URL을 설정:
+   프로젝트 루트에 `.env` 파일을 생성하고 다음 값들을 설정:
    ```env
    VITE_API_URL=https://your-api-id.execute-api.region.amazonaws.com/dev
+   VITE_COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxxxxx
+   VITE_COGNITO_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+   VITE_AWS_REGION=ap-northeast-2
    ```
+   자세한 내용은 [COGNITO_SETUP.md](./COGNITO_SETUP.md)를 참조하세요.
 
 3. **개발 서버 실행**
    ```bash
@@ -72,21 +76,26 @@ npm run build
 
 ## 기능
 
-- 생년월일, 생시, 성별을 입력하여 사주 보기
-- 사주 결과를 DynamoDB에 저장
-- 이전 사주 기록 조회
+- 🔐 **Cognito 인증**: 회원가입, 로그인, 이메일 인증
+- 📱 **온보딩 페이지**: 로그인 전 사용자를 위한 소개 페이지
+- 🔮 **사주 계산**: 생년월일, 생시, 성별을 입력하여 사주 보기
+- 💾 **기록 저장**: 사주 결과를 DynamoDB에 저장
+- 📜 **기록 조회**: 이전 사주 기록 조회 및 관리
 
 ## 기술 스택
 
 ### 프론트엔드
 - React 18
 - Vite
+- React Router
+- AWS Amplify (Cognito 인증)
 - Axios
 
 ### 백엔드
 - AWS Lambda
 - API Gateway
 - DynamoDB
+- AWS Cognito (인증)
 - CloudFormation/SAM
 
 ## 라이선스

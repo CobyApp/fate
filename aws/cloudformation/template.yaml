@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Fate - 사주 보기 웹사이트 인프라
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: 환경 이름
+
+Resources:
+  # Cognito User Pool
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub 'fate-user-pool-${Environment}'
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+        - Name: name
+          Required: false
+          Mutable: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      MfaConfiguration: OFF
+
+  # Cognito User Pool Client
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub 'fate-client-${Environment}'
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      PreventUserExistenceErrors: ENABLED
+
+  # Cognito Identity Pool (선택사항 - 필요시 사용)
+  IdentityPool:
+    Type: AWS::Cognito::IdentityPool
+    Properties:
+      IdentityPoolName: !Sub 'fate-identity-pool-${Environment}'
+      AllowUnauthenticatedIdentities: false
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt UserPool.ProviderName
+
+  # DynamoDB 테이블
+  FateTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'fate-${Environment}'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  # API Gateway
+  FateApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub 'fate-api-${Environment}'
+      StageName: !Sub '${Environment}'
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type'"
+        AllowOrigin: "'*'"
+
+  # Lambda 함수: 사주 계산
+  FateCalculatorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'fate-calculator-${Environment}'
+      CodeUri: ../lambda/fate-calculator
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          FATE_TABLE_NAME: !Ref FateTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref FateTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FateApi
+            Path: /fate
+            Method: post
+
+  # Lambda 함수: 사주 기록 조회
+  GetFateHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'get-fate-history-${Environment}'
+      CodeUri: ../lambda/get-fate-history
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          FATE_TABLE_NAME: !Ref FateTable
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref FateTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FateApi
+            Path: /fate/{id}
+            Method: get
+        ApiEventList:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FateApi
+            Path: /fate
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway 엔드포인트 URL
+    Value: !Sub 'https://${FateApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+  
+  TableName:
+    Description: DynamoDB 테이블 이름
+    Value: !Ref FateTable
+
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolId'
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolClientId'
