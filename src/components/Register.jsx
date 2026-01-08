@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import './Auth.css';
 
 const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
   const { register, error } = useAuth();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -12,10 +14,10 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
   const [localError, setLocalError] = useState(null);
 
   const validatePassword = (pwd) => {
-    if (pwd.length < 8) return '비밀번호는 최소 8자 이상이어야 합니다.';
-    if (!/[A-Z]/.test(pwd)) return '비밀번호에 대문자가 포함되어야 합니다.';
-    if (!/[a-z]/.test(pwd)) return '비밀번호에 소문자가 포함되어야 합니다.';
-    if (!/[0-9]/.test(pwd)) return '비밀번호에 숫자가 포함되어야 합니다.';
+    if (pwd.length < 8) return t('auth.passwordTooShort');
+    if (!/[A-Z]/.test(pwd)) return t('auth.passwordNoUppercase');
+    if (!/[a-z]/.test(pwd)) return t('auth.passwordNoLowercase');
+    if (!/[0-9]/.test(pwd)) return t('auth.passwordNoNumber');
     return null;
   };
 
@@ -34,7 +36,7 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
 
     // 비밀번호 확인
     if (password !== confirmPassword) {
-      setLocalError('비밀번호가 일치하지 않습니다.');
+      setLocalError(t('auth.passwordMismatch'));
       setLoading(false);
       return;
     }
@@ -51,8 +53,8 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>회원가입</h2>
-        <p className="auth-subtitle">새 계정을 만드세요</p>
+        <h2>{t('auth.registerTitle')}</h2>
+        <p className="auth-subtitle">{t('auth.registerSubtitle')}</p>
         
         {(error || localError) && (
           <div className="error-message">
@@ -62,18 +64,18 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="name">이름 (선택사항)</label>
+            <label htmlFor="name">{t('auth.name')}</label>
             <input
               type="text"
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="홍길동"
+              placeholder=""
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">이메일</label>
+            <label htmlFor="email">{t('auth.email')}</label>
             <input
               type="email"
               id="email"
@@ -85,42 +87,42 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">비밀번호</label>
+            <label htmlFor="password">{t('auth.password')}</label>
             <input
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="최소 8자, 대소문자, 숫자 포함"
+              placeholder=""
             />
             <small className="form-hint">
-              최소 8자 이상, 대문자, 소문자, 숫자 포함
+              {t('auth.passwordHint')}
             </small>
           </div>
 
           <div className="form-group">
-            <label htmlFor="confirmPassword">비밀번호 확인</label>
+            <label htmlFor="confirmPassword">{t('auth.confirmPassword')}</label>
             <input
               type="password"
               id="confirmPassword"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              placeholder="비밀번호를 다시 입력하세요"
+              placeholder=""
             />
           </div>
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? '가입 중...' : '회원가입'}
+            {loading ? t('common.loading') : t('auth.register')}
           </button>
         </form>
 
         <div className="auth-switch">
           <p>
-            이미 계정이 있으신가요?{' '}
+            {t('auth.hasAccount')}{' '}
             <button type="button" onClick={onSwitchToLogin} className="link-button">
-              로그인
+              {t('auth.login')}
             </button>
           </p>
         </div>

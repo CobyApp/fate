@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import './Auth.css';
 
 const Login = ({ onSwitchToRegister }) => {
   const { login, error } = useAuth();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,8 +26,8 @@ const Login = ({ onSwitchToRegister }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>로그인</h2>
-        <p className="auth-subtitle">계정에 로그인하세요</p>
+        <h2>{t('auth.loginTitle')}</h2>
+        <p className="auth-subtitle">{t('auth.loginSubtitle')}</p>
         
         {(error || localError) && (
           <div className="error-message">
@@ -35,7 +37,7 @@ const Login = ({ onSwitchToRegister }) => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="email">이메일</label>
+            <label htmlFor="email">{t('auth.email')}</label>
             <input
               type="email"
               id="email"
@@ -47,7 +49,7 @@ const Login = ({ onSwitchToRegister }) => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">비밀번호</label>
+            <label htmlFor="password">{t('auth.password')}</label>
             <input
               type="password"
               id="password"
@@ -59,15 +61,15 @@ const Login = ({ onSwitchToRegister }) => {
           </div>
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? '로그인 중...' : '로그인'}
+            {loading ? t('common.loading') : t('auth.login')}
           </button>
         </form>
 
         <div className="auth-switch">
           <p>
-            계정이 없으신가요?{' '}
+            {t('auth.noAccount')}{' '}
             <button type="button" onClick={onSwitchToRegister} className="link-button">
-              회원가입
+              {t('auth.register')}
             </button>
           </p>
         </div>

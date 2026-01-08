@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../contexts/I18nContext';
 import './Auth.css';
 
 const ConfirmSignUp = ({ email, onConfirmSuccess, onResendCode }) => {
   const { confirmRegistration, resendCode, error } = useAuth();
+  const { t } = useI18n();
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -32,7 +34,7 @@ const ConfirmSignUp = ({ email, onConfirmSuccess, onResendCode }) => {
     setLocalError(null);
     const result = await resendCode(email);
     if (result.success) {
-      alert('인증 코드가 재전송되었습니다. 이메일을 확인해주세요.');
+      alert(t('auth.codeResent'));
     } else {
       setLocalError(result.error);
     }
@@ -44,8 +46,8 @@ const ConfirmSignUp = ({ email, onConfirmSuccess, onResendCode }) => {
       <div className="auth-container">
         <div className="auth-card">
           <div className="success-message">
-            <h2>인증 완료!</h2>
-            <p>로그인 페이지로 이동합니다...</p>
+            <h2>{t('auth.authSuccess')}</h2>
+            <p>{t('auth.authRedirecting')}</p>
           </div>
         </div>
       </div>
@@ -55,9 +57,9 @@ const ConfirmSignUp = ({ email, onConfirmSuccess, onResendCode }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>이메일 인증</h2>
+        <h2>{t('auth.confirmTitle')}</h2>
         <p className="auth-subtitle">
-          {email}로 전송된 인증 코드를 입력하세요
+          {t('auth.confirmSubtitle')}
         </p>
         
         {(error || localError) && (
@@ -68,33 +70,33 @@ const ConfirmSignUp = ({ email, onConfirmSuccess, onResendCode }) => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="code">인증 코드</label>
+            <label htmlFor="code">{t('auth.confirmTitle')}</label>
             <input
               type="text"
               id="code"
               value={code}
               onChange={(e) => setCode(e.target.value)}
               required
-              placeholder="6자리 인증 코드"
+              placeholder=""
               maxLength="6"
             />
           </div>
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? '인증 중...' : '인증하기'}
+            {loading ? t('common.loading') : t('auth.confirmTitle')}
           </button>
         </form>
 
         <div className="auth-switch">
           <p>
-            코드를 받지 못하셨나요?{' '}
+            {t('auth.codeNotReceived')}{' '}
             <button
               type="button"
               onClick={handleResend}
               className="link-button"
               disabled={resendLoading}
             >
-              {resendLoading ? '재전송 중...' : '코드 재전송'}
+              {resendLoading ? t('common.loading') : t('auth.resendCode')}
             </button>
           </p>
         </div>

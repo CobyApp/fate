@@ -7,6 +7,24 @@ Parameters:
     Type: String
     Default: dev
     Description: 환경 이름
+  
+  FromEmailAddress:
+    Type: String
+    Default: 'doyoung@minami-hd.co.jp'
+    Description: 'SES에서 인증한 이메일 주소 (SES 사용 시 필수). 예: noreply@example.com'
+    AllowedPattern: '^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+  
+  ReplyToEmailAddress:
+    Type: String
+    Default: ''
+    Description: 답장 받을 이메일 주소 (선택사항). 비워두면 FromEmailAddress 사용
+    AllowedPattern: '^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+Conditions:
+  UseSES: !Not [!Equals [!Ref FromEmailAddress, '']]
+  HasReplyTo: !And
+    - !Not [!Equals [!Ref FromEmailAddress, '']]
+    - !Not [!Equals [!Ref ReplyToEmailAddress, '']]
 
 Resources:
   # Cognito User Pool
@@ -32,7 +50,16 @@ Resources:
           RequireLowercase: true
           RequireNumbers: true
           RequireSymbols: false
-      MfaConfiguration: OFF
+      EmailConfiguration: !If
+        - UseSES
+        - EmailSendingAccount: DEVELOPER
+          SourceArn: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${FromEmailAddress}'
+          From: !Ref FromEmailAddress
+          ReplyToEmailAddress: !If
+            - HasReplyTo
+            - !Ref ReplyToEmailAddress
+            - !Ref FromEmailAddress
+        - !Ref 'AWS::NoValue'
 
   # Cognito User Pool Client
   UserPoolClient:

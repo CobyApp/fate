@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { I18nProvider, useI18n } from './contexts/I18nContext';
 import Onboarding from './pages/Onboarding';
 import Home from './pages/Home';
 import './App.css';
@@ -10,11 +11,12 @@ import './config/amplify';
 // Protected Route 컴포넌트
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
     return (
       <div className="loading-container">
-        <div className="loading-spinner">로딩 중...</div>
+        <div className="loading-spinner">{t('common.loading')}</div>
       </div>
     );
   }
@@ -25,11 +27,12 @@ const ProtectedRoute = ({ children }) => {
 // Public Route 컴포넌트 (로그인한 사용자는 홈으로 리다이렉트)
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
     return (
       <div className="loading-container">
-        <div className="loading-spinner">로딩 중...</div>
+        <div className="loading-spinner">{t('common.loading')}</div>
       </div>
     );
   }
@@ -63,18 +66,20 @@ function AppRoutes() {
 
 function App() {
   return (
-    <Router
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <AuthProvider>
-        <div className="app">
-          <AppRoutes />
-        </div>
-      </AuthProvider>
-    </Router>
+    <I18nProvider>
+      <Router
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <AuthProvider>
+          <div className="app">
+            <AppRoutes />
+          </div>
+        </AuthProvider>
+      </Router>
+    </I18nProvider>
   );
 }
 

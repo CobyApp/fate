@@ -15,12 +15,10 @@ export default defineConfig({
     global: 'globalThis',
   },
   resolve: {
-    alias: {
-      'aws-amplify/auth': '@aws-amplify/auth'
-    }
+    alias: {}
   },
   optimizeDeps: {
-    include: ['aws-amplify', '@aws-amplify/auth', '@aws-amplify/core'],
+    include: ['aws-amplify'],
     esbuildOptions: {
       define: {
         global: 'globalThis',
