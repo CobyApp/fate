@@ -34,17 +34,32 @@ api.interceptors.request.use(
   }
 );
 
-export const calculateFate = async (birthDate, birthTime, gender, language = 'ko') => {
+export const calculateFate = async (
+  birthDate, 
+  birthTime, 
+  gender, 
+  language = 'ko',
+  category = 'saju',
+  partnerBirthDate = '',
+  partnerBirthTime = '',
+  partnerGender = '',
+  zodiacYear = ''
+) => {
   try {
     const response = await api.post(config.endpoints.calculateFate, {
       birthDate,
       birthTime,
       gender,
-      language
+      language,
+      category,
+      partnerBirthDate,
+      partnerBirthTime,
+      partnerGender,
+      zodiacYear
     });
     return response.data;
   } catch (error) {
-    console.error('사주 계산 오류:', error);
+    console.error('운세 계산 오류:', error);
     throw error;
   }
 };

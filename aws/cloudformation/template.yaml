@@ -278,6 +278,99 @@ Resources:
             Path: /fate
             Method: get
 
+  # S3 버킷 (프론트엔드 호스팅용)
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'fate-frontend-${Environment}-${AWS::AccountId}'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - HEAD
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3000
+      VersioningConfiguration:
+        Status: Enabled
+
+  # CloudFront Origin Access Identity (OAI) - OAC 대신 사용
+  FrontendOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for ${FrontendBucket}'
+
+  # CloudFront Distribution
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        HttpVersion: http2and3
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${FrontendOriginAccessIdentity}'
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - DELETE
+            - GET
+            - HEAD
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          CachedMethods:
+            - GET
+            - HEAD
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6 # Managed-CachingOptimized
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+
+  # S3 버킷 정책 (CloudFront OAI를 통한 접근만 허용)
+  # 참고: CloudFormation의 순환 참조 문제를 피하기 위해 
+  # 배포 후 수동으로 버킷 정책을 설정하거나, 별도 스크립트로 설정해야 할 수 있습니다.
+  # 또는 CloudFront가 S3 버킷에 직접 접근할 수 있도록 버킷 정책을 설정합니다.
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: FrontendOriginAccessIdentity
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub 
+                - 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${OAIId}'
+                - OAIId: !Ref FrontendOriginAccessIdentity
+            Action: s3:GetObject
+            Resource: !Sub 'arn:aws:s3:::${FrontendBucket}/*'
+
 Outputs:
   ProfileImageBucket:
     Description: S3 버킷 이름 (프로필 이미지 저장용)
@@ -304,3 +397,21 @@ Outputs:
     Value: !Ref UserPoolClient
     Export:
       Name: !Sub '${AWS::StackName}-UserPoolClientId'
+
+  FrontendBucket:
+    Description: S3 버킷 이름 (프론트엔드 호스팅용)
+    Value: !Ref FrontendBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendBucket'
+
+  FrontendDistributionId:
+    Description: CloudFront Distribution ID
+    Value: !Ref FrontendDistribution
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendDistributionId'
+
+  FrontendUrl:
+    Description: 프론트엔드 접근 URL (CloudFront)
+    Value: !Sub 'https://${FrontendDistribution.DomainName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendUrl'

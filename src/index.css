@@ -5,12 +5,20 @@
 }
 
 :root {
-  /* 색상 팔레트 - 모던하고 세련된 톤 */
+  /* 색상 팔레트 - 모던하고 트렌디한 톤 */
   --primary: #6366f1;
   --primary-hover: #4f46e5;
   --primary-light: #e0e7ff;
+  --primary-dark: #4338ca;
   --secondary: #8b5cf6;
-  --accent: #ec4899;
+  --accent: #a78bfa;
+  
+  /* 오행 색상 - 모던한 톤 */
+  --wood: #10b981;
+  --fire: #f59e0b;
+  --earth: #8b5cf6;
+  --metal: #6b7280;
+  --water: #3b82f6;
   
   /* 상태 색상 */
   --success: #10b981;
@@ -22,10 +30,11 @@
   --info: #3b82f6;
   --info-light: #dbeafe;
   
-  /* 배경 색상 */
+  /* 배경 색상 - 모던한 톤 */
   --bg-primary: #ffffff;
-  --bg-secondary: #fafafa;
-  --bg-tertiary: #f4f4f5;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-card: #ffffff;
   --bg-overlay: rgba(0, 0, 0, 0.4);
   
   /* 텍스트 색상 */
