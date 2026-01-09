@@ -1,9 +1,12 @@
 .language-selector {
   display: flex;
   align-items: center;
+  width: 100%;
+  margin-bottom: var(--spacing-md);
 }
 
 .language-select {
+  width: 100%;
   padding: 0.625rem 1rem;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);

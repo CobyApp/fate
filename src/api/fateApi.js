@@ -43,10 +43,12 @@ export const calculateFate = async (
   partnerBirthDate = '',
   partnerBirthTime = '',
   partnerGender = '',
-  zodiacYear = ''
+  zodiacYear = '',
+  constellation = ''
 ) => {
   try {
-    const response = await api.post(config.endpoints.calculateFate, {
+    console.log('API 호출 시작:', config.endpoints.calculateFate);
+    const requestBody = {
       birthDate,
       birthTime,
       gender,
@@ -55,11 +57,27 @@ export const calculateFate = async (
       partnerBirthDate,
       partnerBirthTime,
       partnerGender,
-      zodiacYear
-    });
+      zodiacYear,
+      constellation
+    };
+    console.log('요청 본문:', requestBody);
+    
+    const response = await api.post(config.endpoints.calculateFate, requestBody);
+    console.log('API 응답 상태:', response.status);
+    console.log('API 응답 데이터:', response.data);
+    
     return response.data;
   } catch (error) {
     console.error('운세 계산 오류:', error);
+    console.error('오류 응답:', error.response?.data);
+    console.error('오류 상태:', error.response?.status);
+    
+    // 더 자세한 오류 정보를 전달
+    if (error.response?.data) {
+      const apiError = new Error(error.response.data.error || error.response.data.message || '운세 계산에 실패했습니다.');
+      apiError.response = error.response.data;
+      throw apiError;
+    }
     throw error;
   }
 };

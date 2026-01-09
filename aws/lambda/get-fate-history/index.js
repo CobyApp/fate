@@ -22,6 +22,37 @@ exports.handler = async (event) => {
   }
 
   try {
+    // 사용자 ID 추출 (JWT 토큰에서)
+    let userId = null;
+    try {
+      const authHeader = event.headers?.Authorization || event.headers?.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        // JWT 파싱 (간단한 base64 디코딩)
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+          userId = payload.sub || payload['cognito:username'] || null;
+          console.log('사용자 ID 추출 성공:', userId);
+        }
+      }
+    } catch (tokenError) {
+      console.warn('⚠️ 사용자 ID 추출 실패:', tokenError.message);
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ error: '인증이 필요합니다.' })
+      };
+    }
+
+    if (!userId) {
+      return {
+        statusCode: 401,
+        headers,
+        body: JSON.stringify({ error: '사용자 인증이 필요합니다.' })
+      };
+    }
+
     const { id } = event.pathParameters || {};
 
     if (id) {
@@ -39,6 +70,15 @@ exports.handler = async (event) => {
         };
       }
 
+      // 사용자 본인의 기록만 조회 가능
+      if (result.Item.userId !== userId) {
+        return {
+          statusCode: 403,
+          headers,
+          body: JSON.stringify({ error: '접근 권한이 없습니다.' })
+        };
+      }
+
       return {
         statusCode: 200,
         headers,
@@ -48,15 +88,20 @@ exports.handler = async (event) => {
         })
       };
     } else {
-      // 최근 기록 조회 (최대 10개)
+      // 사용자별 최근 기록 조회 (최대 50개)
+      // DynamoDB는 userId로 인덱싱이 필요하지만, 간단한 방법으로 scan + filter 사용
       const result = await dynamodb.scan({
         TableName: TABLE_NAME,
-        Limit: 10
+        FilterExpression: 'userId = :userId',
+        ExpressionAttributeValues: {
+          ':userId': userId
+        },
+        Limit: 50
       }).promise();
 
       // 생성일 기준 내림차순 정렬
-      const items = result.Items.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+      const items = (result.Items || []).sort((a, b) => 
+        new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       );
 
       return {

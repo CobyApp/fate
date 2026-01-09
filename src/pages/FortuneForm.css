@@ -1,0 +1,128 @@
+.fortune-form-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.back-btn {
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-lg);
+  transition: all var(--transition-base);
+}
+
+.back-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.category-icon-large {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: var(--spacing-md);
+}
+
+.form-header h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.fortune-form {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-xl);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all var(--transition-base);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-divider {
+  margin: var(--spacing-xl) 0;
+  padding: var(--spacing-md) 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  margin-top: var(--spacing-lg);
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  padding: var(--spacing-md);
+  background: var(--error-light);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  color: var(--error);
+  margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .fortune-form-page {
+    padding: var(--spacing-md);
+  }
+}

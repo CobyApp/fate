@@ -62,8 +62,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
+      console.log('로그인 시도:', email);
+      
       // v6에서는 signIn이 SRP 프로토콜을 사용
       const result = await signIn({ username: email, password });
+      
+      console.log('로그인 결과:', result);
       
       // SRP 인증이 완료될 때까지 대기
       if (result.isSignedIn) {
@@ -71,7 +75,26 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
       
-      // 추가 인증 단계가 필요한 경우 (예: 새 비밀번호 설정)
+      // 추가 인증 단계가 필요한 경우
+      if (result.nextStep) {
+        console.log('추가 인증 단계 필요:', result.nextStep);
+        
+        // UserNotConfirmedException은 Lambda Trigger가 처리했으므로 다시 시도
+        if (result.nextStep.signInStep === 'CONFIRM_SIGN_UP') {
+          // Lambda가 아직 처리 중일 수 있으므로 잠시 대기 후 재시도
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          try {
+            const retryResult = await signIn({ username: email, password });
+            if (retryResult.isSignedIn) {
+              await checkUser();
+              return { success: true };
+            }
+          } catch (retryErr) {
+            console.error('재시도 로그인 오류:', retryErr);
+          }
+        }
+      }
+      
       return { success: false, error: '추가 인증이 필요합니다.' };
     } catch (err) {
       // 더 자세한 에러 정보 로깅
@@ -89,7 +112,20 @@ export const AuthProvider = ({ children }) => {
       if (err.name === 'NotAuthorizedException') {
         errorMessage = '이메일 또는 비밀번호가 올바르지 않습니다.';
       } else if (err.name === 'UserNotConfirmedException') {
-        errorMessage = '이메일 인증이 완료되지 않았습니다. 이메일을 확인하세요.';
+        // Lambda Trigger가 처리했어야 하는데 아직 처리되지 않은 경우
+        // 잠시 대기 후 재시도
+        console.log('계정 미확인 상태, Lambda 처리 대기 후 재시도');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        try {
+          const retryResult = await signIn({ username: email, password });
+          if (retryResult.isSignedIn) {
+            await checkUser();
+            return { success: true };
+          }
+        } catch (retryErr) {
+          console.error('재시도 로그인 오류:', retryErr);
+          errorMessage = '이메일 인증이 완료되지 않았습니다. 잠시 후 다시 시도해주세요.';
+        }
       } else if (err.name === 'UserNotFoundException') {
         errorMessage = '사용자를 찾을 수 없습니다.';
       } else if (err.message) {
@@ -103,7 +139,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 회원가입
+  // 회원가입 (이메일 인증 없이 바로 사용 가능)
   const register = async (email, password, name, nickname) => {
     try {
       setError(null);
@@ -127,15 +163,66 @@ export const AuthProvider = ({ children }) => {
         userAttributes['custom:nickname'] = name;
       }
       
-      await signUp({
+      console.log('회원가입 시작:', { email, userAttributes });
+      
+      const result = await signUp({
         username: email,
         password,
         options: {
           userAttributes,
+          autoSignIn: {
+            enabled: true
+          }
         },
       });
-      return { success: true, email };
+      
+      console.log('회원가입 결과:', result);
+      
+      // Lambda Pre Sign-up Trigger에서 자동으로 계정 활성화됨
+      // autoSignIn이 활성화되어 있으면 자동으로 로그인 시도
+      if (result.nextStep && result.nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+        // Lambda Trigger가 계정을 자동으로 활성화했으므로 바로 로그인 시도
+        // 약간의 지연 후 로그인 시도 (Lambda가 처리할 시간 확보)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        try {
+          console.log('자동 로그인 시도:', email);
+          const loginResult = await signIn({ username: email, password });
+          console.log('자동 로그인 결과:', loginResult);
+          
+          if (loginResult.isSignedIn) {
+            await checkUser();
+            return { success: true, email, autoSignedIn: true };
+          }
+        } catch (loginErr) {
+          console.error('자동 로그인 오류:', loginErr);
+          // UserNotConfirmedException이 발생하면 다시 시도
+          if (loginErr.name === 'UserNotConfirmedException') {
+            // Lambda가 아직 처리 중일 수 있으므로 다시 시도
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            try {
+              const retryResult = await signIn({ username: email, password });
+              if (retryResult.isSignedIn) {
+                await checkUser();
+                return { success: true, email, autoSignedIn: true };
+              }
+            } catch (retryErr) {
+              console.error('재시도 로그인 오류:', retryErr);
+            }
+          }
+        }
+      }
+      
+      // autoSignIn이 이미 완료된 경우
+      if (result.isSignUpComplete) {
+        await checkUser();
+        return { success: true, email, autoSignedIn: true };
+      }
+      
+      // 회원가입은 성공했지만 로그인에 실패한 경우, 사용자에게 로그인 페이지로 안내
+      return { success: true, email, needsLogin: true };
     } catch (err) {
+      console.error('회원가입 오류:', err);
       const errorMessage = err.message || err.toString() || '회원가입에 실패했습니다.';
       setError(errorMessage);
       return { success: false, error: errorMessage };

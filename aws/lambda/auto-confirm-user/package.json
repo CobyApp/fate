@@ -1,0 +1,9 @@
+{
+  "name": "auto-confirm-user",
+  "version": "1.0.0",
+  "description": "Lambda function to auto-confirm Cognito users",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1691.0"
+  }
+}

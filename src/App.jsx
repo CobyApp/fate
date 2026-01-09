@@ -2,7 +2,12 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { I18nProvider, useI18n } from './contexts/I18nContext';
 import Onboarding from './pages/Onboarding';
-import Home from './pages/Home';
+import HomeLayout from './pages/HomeLayout';
+import CategorySelection from './pages/CategorySelection';
+import FortuneForm from './pages/FortuneForm';
+import FortuneResult from './pages/FortuneResult';
+import History from './pages/History';
+import ProfileSettings from './components/ProfileSettings';
 import './App.css';
 
 // Amplify 설정 import
@@ -55,7 +60,49 @@ function AppRoutes() {
         path="/home"
         element={
           <ProtectedRoute>
-            <Home />
+            <HomeLayout>
+              <CategorySelection />
+            </HomeLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fortune/:categoryId"
+        element={
+          <ProtectedRoute>
+            <HomeLayout>
+              <FortuneForm />
+            </HomeLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/fortune/result/:id"
+        element={
+          <ProtectedRoute>
+            <HomeLayout>
+              <FortuneResult />
+            </HomeLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <ProtectedRoute>
+            <HomeLayout>
+              <History />
+            </HomeLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <HomeLayout>
+              <ProfileSettings />
+            </HomeLayout>
           </ProtectedRoute>
         }
       />

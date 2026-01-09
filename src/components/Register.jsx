@@ -44,7 +44,8 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
 
     const result = await register(email, password, name, nickname);
     if (result.success) {
-      onRegistrationSuccess(result.email);
+      // result 객체 전체를 전달 (email, autoSignedIn, needsLogin 포함)
+      onRegistrationSuccess(result);
     } else {
       setLocalError(result.error);
     }

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { uploadProfileImage } from '../api/fateApi';
 import './ProfileSettings.css';
 
-const ProfileSettings = ({ onClose }) => {
+const ProfileSettings = () => {
+  const navigate = useNavigate();
   const { user, updateProfile, changeUserPassword, deleteAccount, checkUser } = useAuth();
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState('profile');
@@ -194,11 +196,13 @@ const ProfileSettings = ({ onClose }) => {
   };
 
   return (
-    <div className="profile-settings-overlay" onClick={onClose}>
-      <div className="profile-settings-modal" onClick={(e) => e.stopPropagation()}>
+    <div className="profile-settings-page">
+      <div className="profile-settings-container">
         <div className="profile-settings-header">
-          <h2>{t('auth.profileSettings')}</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button onClick={() => navigate('/home')} className="back-btn">
+            ← {t('common.back')}
+          </button>
+          <h1>{t('auth.profileSettings')}</h1>
         </div>
 
         <div className="profile-settings-tabs">

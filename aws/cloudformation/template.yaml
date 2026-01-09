@@ -20,10 +20,10 @@ Parameters:
     Description: '답장 받을 이메일 주소 (선택사항). 비워두면 FromEmailAddress 사용'
     AllowedPattern: '^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
   
-  GeminiApiKey:
+  GroqApiKey:
     Type: String
     Default: ''
-    Description: 'Google Gemini API 키 (Gemini API 사용 시 필수)'
+    Description: 'Groq API 키 (Groq API 사용 시 필수)'
     NoEcho: true
 
 Conditions:
@@ -33,15 +33,27 @@ Conditions:
     - !Not [!Equals [!Ref ReplyToEmailAddress, '']]
 
 Resources:
+  # Lambda 함수: 회원가입 자동 확인 (이메일 인증 없이 바로 사용 가능)
+  # UserPool보다 먼저 정의해야 함 (참조 순서 문제)
+  AutoConfirmUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'auto-confirm-user-${Environment}'
+      CodeUri: ../lambda/auto-confirm-user
+      Handler: index.handler
+      Runtime: nodejs18.x
+      # Pre Sign-up Trigger에서는 autoConfirmUser만 설정하면 되므로 추가 권한 불필요
+
   # Cognito User Pool
   UserPool:
     Type: AWS::Cognito::UserPool
+    DependsOn: AutoConfirmUserFunction
     Properties:
       UserPoolName: !Sub 'fate-user-pool-${Environment}'
-      AutoVerifiedAttributes:
-        - email
+      # 이메일 인증 없이 바로 사용 가능하도록 설정
       UsernameAttributes:
         - email
+      AutoVerifiedAttributes: []
       Schema:
         - Name: email
           Required: true
@@ -54,8 +66,7 @@ Resources:
           Required: false
           Mutable: true
       UserAttributeUpdateSettings:
-        AttributesRequireVerificationBeforeUpdate:
-          - email
+        AttributesRequireVerificationBeforeUpdate: []
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -63,16 +74,25 @@ Resources:
           RequireLowercase: true
           RequireNumbers: true
           RequireSymbols: false
-      EmailConfiguration: !If
-        - UseSES
-        - EmailSendingAccount: DEVELOPER
-          SourceArn: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${FromEmailAddress}'
-          From: !Ref FromEmailAddress
-          ReplyToEmailAddress: !If
-            - HasReplyTo
-            - !Ref ReplyToEmailAddress
-            - !Ref FromEmailAddress
-        - !Ref 'AWS::NoValue'
+      # 이메일 인증 없이 바로 사용 가능하도록 설정
+      # Lambda Trigger를 통한 자동 계정 활성화
+      LambdaConfig:
+        PreSignUp: !GetAtt AutoConfirmUserFunction.Arn
+      # VerificationMessageTemplate 제거 - 이메일 인증이 필요하지 않음
+      # AdminCreateUserConfig 제거 - 기본 설정 사용
+
+  # Lambda Permission: Cognito User Pool이 Lambda 함수를 호출할 수 있도록 권한 부여
+  # UserPool 생성 후에 설정해야 함 (순환 참조 방지)
+  AutoConfirmUserFunctionPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - UserPool
+      - AutoConfirmUserFunction
+    Properties:
+      FunctionName: !Ref AutoConfirmUserFunction
+      Principal: cognito-idp.amazonaws.com
+      Action: lambda:InvokeFunction
+      SourceArn: !GetAtt UserPool.Arn
 
   # Cognito User Pool Client
   UserPoolClient:
@@ -176,6 +196,7 @@ Resources:
         AllowMethods: "'GET,POST,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"
         AllowOrigin: "'*'"
+      # 참고: 504 오류 시 CORS 헤더는 Lambda 함수의 응답에서 처리됩니다.
 
   # Lambda 함수: 사주 계산
   FateCalculatorFunction:
@@ -185,10 +206,12 @@ Resources:
       CodeUri: ../lambda/fate-calculator
       Handler: index.handler
       Runtime: nodejs18.x
+      Timeout: 29
+      MemorySize: 1024
       Environment:
         Variables:
           FATE_TABLE_NAME: !Ref FateTable
-          GEMINI_API_KEY: !Ref GeminiApiKey
+          GROQ_API_KEY: !Ref GroqApiKey
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FateTable

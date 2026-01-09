@@ -53,7 +53,7 @@ jobs:
             --parameter-overrides \
               Environment=${{ env.ENVIRONMENT }} \
               FromEmailAddress=${{ secrets.FROM_EMAIL_ADDRESS }} \
-              GeminiApiKey=${{ secrets.GEMINI_API_KEY }} \
+              GroqApiKey=${{ secrets.GROQ_API_KEY }} \
             --stack-name ${{ env.STACK_NAME }} \
             --region ${{ env.AWS_REGION }} \
             --s3-bucket ${{ env.SAM_BUCKET }} \
