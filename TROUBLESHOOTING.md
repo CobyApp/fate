@@ -4,7 +4,7 @@
 
 ### 증상
 ```
-POST https://cognito-idp.ap-northeast-2.amazonaws.com/ 400 (Bad Request)
+POST https://cognito-idp.ap-northeast-1.amazonaws.com/ 400 (Bad Request)
 ```
 
 ### 원인 및 해결 방법
@@ -26,13 +26,13 @@ POST https://cognito-idp.ap-northeast-2.amazonaws.com/ 400 (Bad Request)
 1. 프로젝트 루트에 `.env` 파일이 있는지 확인
 2. `.env` 파일 내용 확인:
    ```env
-   VITE_COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxxxxx
+   VITE_COGNITO_USER_POOL_ID=ap-northeast-1_xxxxxxxxx
    VITE_COGNITO_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
-   VITE_AWS_REGION=ap-northeast-2
-   VITE_API_URL=https://your-api-id.execute-api.ap-northeast-2.amazonaws.com/dev
+   VITE_AWS_REGION=ap-northeast-1
+   VITE_API_URL=https://your-api-id.execute-api.ap-northeast-1.amazonaws.com/dev
    ```
 3. 값이 올바른지 확인:
-   - User Pool ID 형식: `ap-northeast-2_`로 시작
+   - User Pool ID 형식: `ap-northeast-1_`로 시작
    - Client ID: 긴 문자열 (약 26자)
 4. 개발 서버 재시작:
    ```bash
@@ -53,7 +53,7 @@ POST https://cognito-idp.ap-northeast-2.amazonaws.com/ 400 (Bad Request)
 ```bash
 aws cloudformation describe-stacks \
   --stack-name fate-stack-dev \
-  --region ap-northeast-2 \
+  --region ap-northeast-1 \
   --query 'Stacks[0].Outputs' \
   --output table
 ```
@@ -90,7 +90,7 @@ aws cloudformation describe-stacks \
 #### 5. 리전 확인
 
 **확인**:
-- `.env` 파일의 `VITE_AWS_REGION`이 `ap-northeast-2`인지 확인
+- `.env` 파일의 `VITE_AWS_REGION`이 `ap-northeast-1`인지 확인
 - Cognito User Pool이 같은 리전에 있는지 확인
 
 ---
@@ -151,7 +151,7 @@ console.log(import.meta.env);
 - [ ] `.env` 파일에 `VITE_COGNITO_USER_POOL_ID` 설정됨
 - [ ] `.env` 파일에 `VITE_COGNITO_USER_POOL_CLIENT_ID` 설정됨
 - [ ] `.env` 파일에 `VITE_AWS_REGION` 설정됨 (또는 기본값 사용)
-- [ ] User Pool ID가 올바른 형식 (`ap-northeast-2_`로 시작)
+- [ ] User Pool ID가 올바른 형식 (`ap-northeast-1_`로 시작)
 - [ ] Client ID가 올바른 형식 (긴 문자열)
 - [ ] 개발 서버 재시작 (`npm run dev`)
 - [ ] Cognito User Pool이 올바른 리전에 있음

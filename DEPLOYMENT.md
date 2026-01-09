@@ -14,7 +14,7 @@ brew install awscli
 aws configure
 # Access Key ID 입력
 # Secret Access Key 입력
-# Default region name: ap-northeast-2 (서울)
+# Default region name: ap-northeast-1 (도쿄)
 # Default output format: json
 ```
 
@@ -44,7 +44,7 @@ sam deploy --guided
 
 # 배포 시 질문에 답변:
 # - Stack Name: fate-stack (또는 원하는 이름)
-# - AWS Region: ap-northeast-2 (서울)
+# - AWS Region: ap-northeast-1 (도쿄)
 # - Parameter Environment: dev
 # - Confirm changes before deploy: Y
 # - Allow SAM CLI IAM role creation: Y
@@ -69,14 +69,14 @@ aws cloudformation create-stack \
   --template-body file://template.yaml \
   --capabilities CAPABILITY_IAM \
   --parameters ParameterKey=Environment,ParameterValue=dev \
-  --region ap-northeast-2
+  --region ap-northeast-1
 ```
 
 배포 상태 확인:
 ```bash
 aws cloudformation describe-stacks \
   --stack-name fate-stack \
-  --region ap-northeast-2
+  --region ap-northeast-1
 ```
 
 ## 🔗 프론트엔드 연결 설정
@@ -96,19 +96,19 @@ cp .env.example .env
 
 ```env
 # API Gateway URL
-VITE_API_URL=https://abc123xyz.execute-api.ap-northeast-2.amazonaws.com/dev
+VITE_API_URL=https://abc123xyz.execute-api.ap-northeast-1.amazonaws.com/dev
 
 # Cognito 설정
-VITE_COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxxxxx
+VITE_COGNITO_USER_POOL_ID=ap-northeast-1_xxxxxxxxx
 VITE_COGNITO_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
-VITE_AWS_REGION=ap-northeast-2
+VITE_AWS_REGION=ap-northeast-1
 ```
 
 **환경 변수 찾는 방법:**
 - **VITE_API_URL**: SAM 배포 완료 시 출력된 `ApiUrl` 사용
 - **VITE_COGNITO_USER_POOL_ID**: SAM 배포 완료 시 출력된 `UserPoolId` 사용
 - **VITE_COGNITO_USER_POOL_CLIENT_ID**: SAM 배포 완료 시 출력된 `UserPoolClientId` 사용
-- **VITE_AWS_REGION**: AWS 리전 (예: ap-northeast-2)
+- **VITE_AWS_REGION**: AWS 리전 (예: ap-northeast-1)
 
 **API URL 찾는 방법:**
 - SAM 배포 완료 시 출력된 `ApiUrl` 사용
@@ -136,7 +136,7 @@ npm run dev
 
 ```bash
 # API URL을 환경 변수로 설정
-export API_URL="https://your-api-id.execute-api.ap-northeast-2.amazonaws.com/dev"
+export API_URL="https://your-api-id.execute-api.ap-northeast-1.amazonaws.com/dev"
 
 # 사주 계산 (POST)
 curl -X POST $API_URL/fate \
@@ -189,7 +189,7 @@ sam delete --stack-name fate-stack
 # 또는 CloudFormation으로 직접 삭제
 aws cloudformation delete-stack \
   --stack-name fate-stack \
-  --region ap-northeast-2
+  --region ap-northeast-1
 ```
 
 ## ⚠️ 문제 해결

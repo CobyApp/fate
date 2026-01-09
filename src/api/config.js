@@ -7,6 +7,8 @@ export default {
   endpoints: {
     calculateFate: '/fate',
     getFateHistory: '/fate',
-    getFateById: (id) => `/fate/${id}`
+    getFateById: (id) => `/fate/${id}`,
+    changePassword: '/change-password',
+    uploadProfileImage: (extension = 'jpg') => `/upload-profile-image/${extension}`
   }
 };

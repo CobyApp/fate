@@ -3,11 +3,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import './Auth.css';
 
-const Login = ({ onSwitchToRegister, onForgotPassword }) => {
-  const { login, error } = useAuth();
+const ForgotPassword = ({ onBackToLogin, onCodeSent }) => {
+  const { forgotPassword, error } = useAuth();
   const { t } = useI18n();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
@@ -16,8 +15,10 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
     setLoading(true);
     setLocalError(null);
 
-    const result = await login(email, password);
-    if (!result.success) {
+    const result = await forgotPassword(email);
+    if (result.success) {
+      onCodeSent(result.email);
+    } else {
       setLocalError(result.error);
     }
     setLoading(false);
@@ -26,8 +27,8 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>{t('auth.loginTitle')}</h2>
-        <p className="auth-subtitle">{t('auth.loginSubtitle')}</p>
+        <h2>{t('auth.forgotPasswordTitle')}</h2>
+        <p className="auth-subtitle">{t('auth.forgotPasswordSubtitle')}</p>
         
         {(error || localError) && (
           <div className="error-message">
@@ -48,41 +49,19 @@ const Login = ({ onSwitchToRegister, onForgotPassword }) => {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password">{t('auth.password')}</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="••••••••"
-            />
-          </div>
-
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? t('common.loading') : t('auth.login')}
+            {loading ? t('common.loading') : t('auth.sendResetCode')}
           </button>
         </form>
 
         <div className="auth-switch">
-          <p>
-            {t('auth.noAccount')}{' '}
-            <button type="button" onClick={onSwitchToRegister} className="link-button">
-              {t('auth.register')}
-            </button>
-          </p>
-          {onForgotPassword && (
-            <p>
-              <button type="button" onClick={onForgotPassword} className="link-button">
-                {t('auth.forgotPassword')}
-              </button>
-            </p>
-          )}
+          <button type="button" onClick={onBackToLogin} className="link-button">
+            {t('auth.backToLogin')}
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default ForgotPassword;

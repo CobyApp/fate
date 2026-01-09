@@ -3,14 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import './Auth.css';
 
-const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
-  const { register, error } = useAuth();
+const ResetPassword = ({ email, onSuccess }) => {
+  const { confirmForgotPassword, error } = useAuth();
   const { t } = useI18n();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
-  const [nickname, setNickname] = useState('');
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
@@ -27,24 +25,22 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
     setLoading(true);
     setLocalError(null);
 
-    // 비밀번호 검증
-    const passwordError = validatePassword(password);
+    const passwordError = validatePassword(newPassword);
     if (passwordError) {
       setLocalError(passwordError);
       setLoading(false);
       return;
     }
 
-    // 비밀번호 확인
-    if (password !== confirmPassword) {
+    if (newPassword !== confirmPassword) {
       setLocalError(t('auth.passwordMismatch'));
       setLoading(false);
       return;
     }
 
-    const result = await register(email, password, name, nickname);
+    const result = await confirmForgotPassword(email, code, newPassword);
     if (result.success) {
-      onRegistrationSuccess(result.email);
+      onSuccess();
     } else {
       setLocalError(result.error);
     }
@@ -54,8 +50,8 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h2>{t('auth.registerTitle')}</h2>
-        <p className="auth-subtitle">{t('auth.registerSubtitle')}</p>
+        <h2>{t('auth.resetPasswordTitle')}</h2>
+        <p className="auth-subtitle">{t('auth.resetPasswordSubtitle')}</p>
         
         {(error || localError) && (
           <div className="error-message">
@@ -65,49 +61,26 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
-            <label htmlFor="nickname">{t('auth.nickname')}</label>
+            <label htmlFor="code">{t('auth.resetCode')}</label>
             <input
               type="text"
-              id="nickname"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              id="code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
               required
-              placeholder={t('auth.nicknamePlaceholder')}
+              placeholder="000000"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="name">{t('auth.name')}</label>
-            <input
-              type="text"
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('auth.namePlaceholder')}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="email">{t('auth.email')}</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="your@email.com"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">{t('auth.password')}</label>
+            <label htmlFor="newPassword">{t('auth.newPassword')}</label>
             <input
               type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              id="newPassword"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
               required
-              placeholder=""
+              placeholder="••••••••"
             />
             <small className="form-hint">
               {t('auth.passwordHint')}
@@ -122,26 +95,17 @@ const Register = ({ onSwitchToLogin, onRegistrationSuccess }) => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              placeholder=""
+              placeholder="••••••••"
             />
           </div>
 
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? t('common.loading') : t('auth.register')}
+            {loading ? t('common.loading') : t('auth.resetPassword')}
           </button>
         </form>
-
-        <div className="auth-switch">
-          <p>
-            {t('auth.hasAccount')}{' '}
-            <button type="button" onClick={onSwitchToLogin} className="link-button">
-              {t('auth.login')}
-            </button>
-          </p>
-        </div>
       </div>
     </div>
   );
 };
 
-export default Register;
+export default ResetPassword;

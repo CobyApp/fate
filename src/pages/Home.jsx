@@ -3,11 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useI18n } from '../contexts/I18nContext';
 import { calculateFate, getFateHistory } from '../api/fateApi';
 import LanguageSelector from '../components/LanguageSelector';
+import ProfileSettings from '../components/ProfileSettings';
 import './Home.css';
 
 const Home = () => {
   const { user, logout } = useAuth();
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const [birthDate, setBirthDate] = useState('');
   const [birthTime, setBirthTime] = useState('');
   const [gender, setGender] = useState('');
@@ -17,6 +18,7 @@ const Home = () => {
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [showProfileSettings, setShowProfileSettings] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,7 +27,7 @@ const Home = () => {
     setResult(null);
 
     try {
-      const response = await calculateFate(birthDate, birthTime, gender);
+      const response = await calculateFate(birthDate, birthTime, gender, language);
       if (response.success) {
         setResult(response.data);
         // 결과를 받으면 히스토리 새로고침
@@ -66,7 +68,13 @@ const Home = () => {
     await logout();
   };
 
-  const userName = user?.username || user?.attributes?.email || 'User';
+  // 사용자 이름 우선순위: 닉네임 > name > email > username
+  const userName = user?.attributes?.['custom:nickname'] 
+    || user?.attributes?.nickname 
+    || user?.attributes?.name 
+    || user?.username 
+    || user?.attributes?.email 
+    || 'User';
 
   return (
     <div className="home">
@@ -79,6 +87,9 @@ const Home = () => {
               {showHistory ? t('home.result') : t('home.history')}
             </button>
             <div className="user-info">
+              <button onClick={() => setShowProfileSettings(true)} className="profile-btn">
+                {t('auth.profile')}
+              </button>
               <span className="user-email">{userName}</span>
               <button onClick={handleLogout} className="logout-btn">
                 {t('auth.logout')}
@@ -228,6 +239,10 @@ const Home = () => {
           </div>
         )}
       </main>
+
+      {showProfileSettings && (
+        <ProfileSettings onClose={() => setShowProfileSettings(false)} />
+      )}
     </div>
   );
 };

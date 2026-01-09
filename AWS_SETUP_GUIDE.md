@@ -18,7 +18,7 @@
 ### 1. AWS 계정 생성 및 준비
 
 1. [AWS 콘솔](https://aws.amazon.com/console/)에 로그인
-2. **리전 선택**: 오른쪽 상단에서 `ap-northeast-2 (서울)` 선택
+2. **리전 선택**: 오른쪽 상단에서 `ap-northeast-1 (도쿄)` 선택
 3. **결제 정보 확인**: 모든 서비스가 사용료가 발생할 수 있으므로 결제 정보 확인
 
 ### 2. AWS CLI 설치 및 설정
@@ -47,7 +47,7 @@ aws configure
 # 다음 정보 입력:
 # AWS Access Key ID: [IAM에서 생성한 Access Key]
 # AWS Secret Access Key: [IAM에서 생성한 Secret Key]
-# Default region name: ap-northeast-2
+# Default region name: ap-northeast-1
 # Default output format: json
 ```
 
@@ -233,8 +233,8 @@ sam deploy --guided
    - 기본값 그대로 Enter 또는 원하는 이름 입력
    - 예: `fate-stack-dev`
 
-2. **AWS Region [ap-northeast-2]**:
-   - `ap-northeast-2` 입력 (서울 리전)
+2. **AWS Region [ap-northeast-1]**:
+   - `ap-northeast-1` 입력 (도쿄 리전)
 
 3. **Parameter Environment [dev]**:
    - `dev` 입력 (개발 환경)
@@ -258,14 +258,14 @@ sam deploy --guided
 배포가 완료되면 다음과 같은 출력이 나타납니다:
 
 ```
-Successfully created/updated stack - fate-stack in ap-northeast-2
+Successfully created/updated stack - fate-stack in ap-northeast-1
 
 Outputs:
 --------------------------------------------------------------------------------
-ApiUrl = https://abc123xyz.execute-api.ap-northeast-2.amazonaws.com/dev
+ApiUrl = https://abc123xyz.execute-api.ap-northeast-1.amazonaws.com/dev
 TableName = fate-dev
 UserPoolClientId = 1a2b3c4d5e6f7g8h9i0j
-UserPoolId = ap-northeast-2_ABC123XYZ
+UserPoolId = ap-northeast-1_ABC123XYZ
 --------------------------------------------------------------------------------
 ```
 
@@ -280,7 +280,7 @@ UserPoolId = ap-northeast-2_ABC123XYZ
 1. AWS 콘솔 → **Cognito** → **User pools**
 2. `fate-user-pool-dev` 선택
 3. 확인 사항:
-   - ✅ User Pool ID 확인 (예: `ap-northeast-2_ABC123XYZ`)
+   - ✅ User Pool ID 확인 (예: `ap-northeast-1_ABC123XYZ`)
    - ✅ "App integration" 탭 → App client 목록에서 Client ID 확인
    - ✅ "Sign-up experience" 탭 → 이메일 인증 활성화 확인
 
@@ -420,7 +420,7 @@ UserPoolId = ap-northeast-2_ABC123XYZ
 
 1. "Stages" 탭 → `dev` 스테이지 선택
 2. "Invoke URL" 확인:
-   - 예: `https://abc123xyz.execute-api.ap-northeast-2.amazonaws.com/dev`
+   - 예: `https://abc123xyz.execute-api.ap-northeast-1.amazonaws.com/dev`
    - 이 URL이 `.env` 파일의 `VITE_API_URL`과 일치하는지 확인
 
 ---
@@ -442,16 +442,16 @@ touch .env
 
 ```env
 # API Gateway URL (SAM 배포 완료 시 출력된 ApiUrl)
-VITE_API_URL=https://abc123xyz.execute-api.ap-northeast-2.amazonaws.com/dev
+VITE_API_URL=https://abc123xyz.execute-api.ap-northeast-1.amazonaws.com/dev
 
 # Cognito User Pool ID (SAM 배포 완료 시 출력된 UserPoolId)
-VITE_COGNITO_USER_POOL_ID=ap-northeast-2_ABC123XYZ
+VITE_COGNITO_USER_POOL_ID=ap-northeast-1_ABC123XYZ
 
 # Cognito User Pool Client ID (SAM 배포 완료 시 출력된 UserPoolClientId)
 VITE_COGNITO_USER_POOL_CLIENT_ID=1a2b3c4d5e6f7g8h9i0j
 
 # AWS 리전
-VITE_AWS_REGION=ap-northeast-2
+VITE_AWS_REGION=ap-northeast-1
 ```
 
 ### 3. 환경 변수 확인 방법 (다시 찾아야 하는 경우)
@@ -461,7 +461,7 @@ VITE_AWS_REGION=ap-northeast-2
 ```bash
 aws cloudformation describe-stacks \
   --stack-name fate-stack \
-  --region ap-northeast-2 \
+  --region ap-northeast-1 \
   --query 'Stacks[0].Outputs' \
   --output table
 ```
@@ -518,7 +518,7 @@ npm run dev
 
 ```bash
 # API URL을 환경 변수로 설정
-export API_URL="https://abc123xyz.execute-api.ap-northeast-2.amazonaws.com/dev"
+export API_URL="https://abc123xyz.execute-api.ap-northeast-1.amazonaws.com/dev"
 
 # 1. 사주 계산 (POST)
 curl -X POST $API_URL/fate \
@@ -571,7 +571,7 @@ curl -X GET $API_URL/fate/{id}
 1. Postman 설치
 2. 새 Request 생성:
    - Method: `POST`
-   - URL: `https://abc123xyz.execute-api.ap-northeast-2.amazonaws.com/dev/fate`
+   - URL: `https://abc123xyz.execute-api.ap-northeast-1.amazonaws.com/dev/fate`
    - Headers: `Content-Type: application/json`
    - Body (raw JSON):
      ```json
@@ -657,7 +657,7 @@ authorized to perform: cloudformation:CreateChangeSet
 # 스택 이벤트 확인
 aws cloudformation describe-stack-events \
   --stack-name fate-stack \
-  --region ap-northeast-2 \
+  --region ap-northeast-1 \
   --max-items 10 \
   --query 'StackEvents[?ResourceStatus==`CREATE_FAILED`]' \
   --output table
@@ -666,7 +666,7 @@ aws cloudformation describe-stack-events \
 **일반적인 원인:**
 - IAM 권한 부족 → IAM 사용자에 `AdministratorAccess` 또는 필요한 권한 추가 (위 섹션 참조)
 - 리소스 이름 충돌 → 다른 스택 이름 사용
-- 리전 문제 → `ap-northeast-2` 리전 확인
+- 리전 문제 → `ap-northeast-1` 리전 확인
 
 ### 2. Cognito 오류
 
@@ -726,7 +726,7 @@ has been blocked by CORS policy
 #### "Table not found"
 
 - ✅ 테이블 이름 확인: `fate-dev`
-- ✅ 리전 확인: `ap-northeast-2`
+- ✅ 리전 확인: `ap-northeast-1`
 - ✅ Lambda 함수 환경 변수 `FATE_TABLE_NAME` 확인
 
 #### "Access denied"
@@ -818,12 +818,12 @@ has been blocked by CORS policy
 cd aws/cloudformation
 
 # SAM으로 배포한 경우
-sam delete --stack-name fate-stack --region ap-northeast-2
+sam delete --stack-name fate-stack --region ap-northeast-1
 
 # 또는 CloudFormation으로 직접 삭제
 aws cloudformation delete-stack \
   --stack-name fate-stack \
-  --region ap-northeast-2
+  --region ap-northeast-1
 ```
 
 **⚠️ 주의**: 모든 리소스가 삭제되며 데이터도 삭제됩니다. DynamoDB 테이블의 데이터를 백업하려면 먼저 Export를 실행하세요.

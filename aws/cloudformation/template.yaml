@@ -17,8 +17,14 @@ Parameters:
   ReplyToEmailAddress:
     Type: String
     Default: ''
-    Description: 답장 받을 이메일 주소 (선택사항). 비워두면 FromEmailAddress 사용
+    Description: '답장 받을 이메일 주소 (선택사항). 비워두면 FromEmailAddress 사용'
     AllowedPattern: '^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+  
+  GeminiApiKey:
+    Type: String
+    Default: ''
+    Description: 'Google Gemini API 키 (Gemini API 사용 시 필수)'
+    NoEcho: true
 
 Conditions:
   UseSES: !Not [!Equals [!Ref FromEmailAddress, '']]
@@ -43,6 +49,13 @@ Resources:
         - Name: name
           Required: false
           Mutable: true
+        - AttributeDataType: String
+          Name: nickname
+          Required: false
+          Mutable: true
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate:
+          - email
       Policies:
         PasswordPolicy:
           MinimumLength: 8
@@ -84,6 +97,60 @@ Resources:
         - ClientId: !Ref UserPoolClient
           ProviderName: !GetAtt UserPool.ProviderName
 
+  # S3 버킷 (프로필 이미지 저장용)
+  ProfileImageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'fate-profile-images-${Environment}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3000
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldVersions
+            Status: Enabled
+            NoncurrentVersionExpirationInDays: 30
+
+  # S3 버킷 정책 (나중에 Cognito Identity Pool을 통한 접근 설정)
+  # 현재는 Lambda를 통해 업로드하도록 구현 예정
+  # ProfileImageBucketPolicy:
+  #   Type: AWS::S3::BucketPolicy
+  #   Properties:
+  #     Bucket: !Ref ProfileImageBucket
+  #     PolicyDocument:
+  #       Statement:
+  #         - Sid: AllowCognitoUsers
+  #           Effect: Allow
+  #           Principal:
+  #             Federated: cognito-identity.amazonaws.com
+  #           Action:
+  #             - s3:GetObject
+  #             - s3:PutObject
+  #             - s3:DeleteObject
+  #           Resource: !Sub '${ProfileImageBucket}/*'
+  #           Condition:
+  #             StringEquals:
+  #               'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+  #             'ForAnyValue:StringLike':
+  #               'cognito-identity.amazonaws.com:amr': authenticated
+
   # DynamoDB 테이블
   FateTable:
     Type: AWS::DynamoDB::Table
@@ -107,7 +174,7 @@ Resources:
       StageName: !Sub '${Environment}'
       Cors:
         AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Content-Type'"
+        AllowHeaders: "'Content-Type,Authorization'"
         AllowOrigin: "'*'"
 
   # Lambda 함수: 사주 계산
@@ -121,6 +188,7 @@ Resources:
       Environment:
         Variables:
           FATE_TABLE_NAME: !Ref FateTable
+          GEMINI_API_KEY: !Ref GeminiApiKey
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref FateTable
@@ -131,6 +199,56 @@ Resources:
             RestApiId: !Ref FateApi
             Path: /fate
             Method: post
+
+  # Lambda 함수: 비밀번호 변경
+  ChangePasswordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'change-password-${Environment}'
+      CodeUri: ../lambda/change-password
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:ChangePassword
+                - cognito-idp:GetUser
+              Resource: !GetAtt UserPool.Arn
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FateApi
+            Path: /change-password
+            Method: post
+
+  # Lambda 함수: 프로필 이미지 업로드 URL 생성
+  UploadProfileImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'upload-profile-image-${Environment}'
+      CodeUri: ../lambda/upload-profile-image
+      Handler: index.handler
+      Runtime: nodejs18.x
+      Environment:
+        Variables:
+          PROFILE_IMAGE_BUCKET: !Ref ProfileImageBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ProfileImageBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - cognito-idp:GetUser
+              Resource: !GetAtt UserPool.Arn
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FateApi
+            Path: /upload-profile-image/{extension}
+            Method: get
 
   # Lambda 함수: 사주 기록 조회
   GetFateHistoryFunction:
@@ -161,6 +279,12 @@ Resources:
             Method: get
 
 Outputs:
+  ProfileImageBucket:
+    Description: S3 버킷 이름 (프로필 이미지 저장용)
+    Value: !Ref ProfileImageBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-ProfileImageBucket'
+
   ApiUrl:
     Description: API Gateway 엔드포인트 URL
     Value: !Sub 'https://${FateApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'

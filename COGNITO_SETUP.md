@@ -15,10 +15,10 @@ CloudFormation 템플릿에 다음 Cognito 리소스가 포함되어 있습니�
 프로젝트 루트에 `.env` 파일을 생성하고 다음 변수들을 설정하세요:
 
 ```env
-VITE_COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxxxxx
+VITE_COGNITO_USER_POOL_ID=ap-northeast-1_xxxxxxxxx
 VITE_COGNITO_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
-VITE_AWS_REGION=ap-northeast-2
-VITE_API_URL=https://your-api-id.execute-api.ap-northeast-2.amazonaws.com/dev
+VITE_AWS_REGION=ap-northeast-1
+VITE_API_URL=https://your-api-id.execute-api.ap-northeast-1.amazonaws.com/dev
 ```
 
 ## 📝 배포 후 값 확인
@@ -28,7 +28,7 @@ VITE_API_URL=https://your-api-id.execute-api.ap-northeast-2.amazonaws.com/dev
 ```bash
 aws cloudformation describe-stacks \
   --stack-name fate-stack \
-  --region ap-northeast-2 \
+  --region ap-northeast-1 \
   --query 'Stacks[0].Outputs'
 ```
 

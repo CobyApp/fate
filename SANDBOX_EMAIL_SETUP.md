@@ -23,8 +23,8 @@ Sandbox 모드에서는 **인증한 이메일 주소로만** 회원가입이 가
    - **Amazon SES** 선택
 
 3. **리전 확인**
-   - 오른쪽 상단에서 리전이 `ap-northeast-2` (서울)인지 확인
-   - 다른 리전이면 `ap-northeast-2`로 변경
+   - 오른쪽 상단에서 리전이 `ap-northeast-1` (도쿄)인지 확인
+   - 다른 리전이면 `ap-northeast-1`로 변경
 
 4. **Verified identities로 이동**
    - 왼쪽 메뉴에서 **Configuration** → **Verified identities** 클릭

@@ -3,7 +3,7 @@ import { Amplify } from 'aws-amplify';
 // 환경 변수에서 Cognito 설정 가져오기
 const userPoolId = import.meta.env.VITE_COGNITO_USER_POOL_ID;
 const userPoolClientId = import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID;
-const region = import.meta.env.VITE_AWS_REGION || 'ap-northeast-2';
+const region = import.meta.env.VITE_AWS_REGION || 'ap-northeast-1';
 
 // 환경 변수 확인
 if (!userPoolId || !userPoolClientId) {

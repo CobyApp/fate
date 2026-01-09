@@ -194,7 +194,7 @@ sam deploy --guided
 ```bash
 aws cloudformation describe-stacks \
   --stack-name fate-stack-dev \
-  --region ap-northeast-2 \
+  --region ap-northeast-1 \
   --query 'Stacks[0].Outputs' \
   --output table
 ```

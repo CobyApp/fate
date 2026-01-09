@@ -60,9 +60,9 @@ npm run build
    프로젝트 루트에 `.env` 파일을 생성하고 다음 값들을 설정:
    ```env
    VITE_API_URL=https://your-api-id.execute-api.region.amazonaws.com/dev
-   VITE_COGNITO_USER_POOL_ID=ap-northeast-2_xxxxxxxxx
+   VITE_COGNITO_USER_POOL_ID=ap-northeast-1_xxxxxxxxx
    VITE_COGNITO_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
-   VITE_AWS_REGION=ap-northeast-2
+   VITE_AWS_REGION=ap-northeast-1
    ```
    자세한 내용은 [COGNITO_SETUP.md](./COGNITO_SETUP.md)를 참조하세요.
 

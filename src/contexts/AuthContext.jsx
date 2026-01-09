@@ -7,8 +7,15 @@ import {
   signOut, 
   getCurrentUser,
   fetchAuthSession,
-  fetchUserAttributes
+  fetchUserAttributes,
+  updateUserAttribute,
+  deleteUser,
+  resetPassword,
+  confirmResetPassword
 } from 'aws-amplify/auth';
+
+// aws-amplify v6에서 비밀번호 변경은 updatePassword를 사용하거나 Lambda를 통해 처리
+// 현재는 Lambda를 통해 처리하도록 구현
 
 const AuthContext = createContext(null);
 
@@ -97,17 +104,34 @@ export const AuthProvider = ({ children }) => {
   };
 
   // 회원가입
-  const register = async (email, password, name) => {
+  const register = async (email, password, name, nickname) => {
     try {
       setError(null);
+      const userAttributes = {
+        email,
+      };
+      
+      // name 속성 설정 (nickname이 없으면 name 사용, 둘 다 없으면 email 사용)
+      if (name) {
+        userAttributes.name = name;
+      } else if (nickname) {
+        userAttributes.name = nickname;
+      } else {
+        userAttributes.name = email;
+      }
+      
+      // nickname 속성 설정 (custom:nickname 또는 nickname)
+      if (nickname) {
+        userAttributes['custom:nickname'] = nickname;
+      } else if (name) {
+        userAttributes['custom:nickname'] = name;
+      }
+      
       await signUp({
         username: email,
         password,
         options: {
-          userAttributes: {
-            email,
-            name: name || email,
-          },
+          userAttributes,
         },
       });
       return { success: true, email };
@@ -168,6 +192,124 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // 비밀번호 찾기 (이메일로 코드 전송)
+  const forgotPassword = async (email) => {
+    try {
+      setError(null);
+      await resetPassword({ username: email });
+      return { success: true, email };
+    } catch (err) {
+      const errorMessage = err.message || err.toString() || '비밀번호 재설정 요청에 실패했습니다.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // 비밀번호 재설정 확인
+  const confirmForgotPassword = async (email, confirmationCode, newPassword) => {
+    try {
+      setError(null);
+      await confirmResetPassword({ username: email, confirmationCode, newPassword });
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err.message || err.toString() || '비밀번호 재설정에 실패했습니다.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // 비밀번호 변경 (로그인 상태에서)
+  // Lambda 함수를 통해 Cognito ChangePassword API 호출
+  const changeUserPassword = async (oldPassword, newPassword) => {
+    try {
+      setError(null);
+      
+      // API를 통해 Lambda 함수 호출
+      const { changePassword: changePasswordApi } = await import('../api/fateApi');
+      const result = await changePasswordApi(oldPassword, newPassword);
+      
+      if (result.success) {
+        return { success: true };
+      } else {
+        throw new Error(result.error || '비밀번호 변경에 실패했습니다.');
+      }
+    } catch (err) {
+      let errorMessage = '비밀번호 변경에 실패했습니다.';
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else if (err.toString) {
+        errorMessage = err.toString();
+      }
+      
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // 사용자 정보 수정
+  const updateProfile = async (attributes) => {
+    try {
+      setError(null);
+      
+      // name 속성 업데이트
+      if (attributes.name !== undefined && attributes.name !== user?.attributes?.name) {
+        await updateUserAttribute({ 
+          userAttribute: { 
+            attributeKey: 'name', 
+            value: attributes.name 
+          } 
+        });
+      }
+      
+      // custom:nickname 속성 업데이트
+      if (attributes.nickname !== undefined) {
+        const currentNickname = user?.attributes?.['custom:nickname'] || user?.attributes?.nickname;
+        if (attributes.nickname !== currentNickname) {
+          await updateUserAttribute({ 
+            userAttribute: { 
+              attributeKey: 'custom:nickname', 
+              value: attributes.nickname 
+            } 
+          });
+        }
+      }
+      
+      // picture 속성 업데이트 (프로필 이미지)
+      if (attributes.picture !== undefined && attributes.picture !== user?.attributes?.picture) {
+        await updateUserAttribute({ 
+          userAttribute: { 
+            attributeKey: 'picture', 
+            value: attributes.picture 
+          } 
+        });
+      }
+
+      await checkUser(); // 사용자 정보 새로고침
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err.message || err.toString() || '정보 수정에 실패했습니다.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // 회원탈퇴
+  const deleteAccount = async () => {
+    try {
+      setError(null);
+      await deleteUser();
+      setUser(null);
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err.message || err.toString() || '회원탈퇴에 실패했습니다.';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -178,6 +320,12 @@ export const AuthProvider = ({ children }) => {
     resendCode,
     logout,
     getAuthToken,
+    forgotPassword,
+    confirmForgotPassword,
+    changeUserPassword,
+    updateProfile,
+    deleteAccount,
+    checkUser,
     isAuthenticated: !!user,
   };
 
