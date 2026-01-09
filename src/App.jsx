@@ -72,7 +72,7 @@ function App() {
           v7_startTransition: true,
           v7_relativeSplatPath: true,
         }}
-      >
+            >
         <AuthProvider>
           <div className="app">
             <AppRoutes />

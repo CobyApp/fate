@@ -49,12 +49,12 @@ exports.handler = async (event) => {
         };
       }
     } else {
-      if (!birthDate || !gender) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: '생년월일과 성별은 필수입니다.' })
-        };
+    if (!birthDate || !gender) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: '생년월일과 성별은 필수입니다.' })
+      };
       }
     }
 
@@ -140,7 +140,7 @@ async function calculateFateWithGemini(
 
   let year, month, day, hour = 0;
   if (birthDate) {
-    const date = new Date(birthDate);
+  const date = new Date(birthDate);
     year = date.getFullYear();
     month = date.getMonth() + 1;
     day = date.getDate();

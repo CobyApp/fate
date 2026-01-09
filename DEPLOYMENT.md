@@ -1,221 +1,264 @@
-# 배포 및 서버 연결 가이드
+# 배포 가이드
 
-이 문서는 AWS Lambda, API Gateway, DynamoDB를 사용한 서버 연결 및 배포 방법을 안내합니다.
+이 문서는 Fate 애플리케이션을 AWS에 배포하는 방법을 설명합니다.
 
-## 📋 사전 준비사항
+## 📋 사전 요구사항
 
-### 1. AWS 계정 및 CLI 설정
+- AWS 계정
+- AWS CLI 설치 및 구성
+- AWS SAM CLI 설치
+- Node.js 18 이상
+- Git
+- Google Gemini API 키
+
+## 🚀 배포 방법
+
+### 방법 1: GitHub Actions 자동 배포 (권장)
+
+`main` 또는 `master` 브랜치에 코드를 푸시하면 자동으로 배포됩니다.
+
+#### 1. GitHub Secrets 설정
+
+GitHub 저장소의 **Settings > Secrets and variables > Actions**에서 다음 Secrets를 추가:
+
+**필수 Secrets:**
+- `AWS_ACCESS_KEY_ID` - AWS IAM Access Key ID
+- `AWS_SECRET_ACCESS_KEY` - AWS IAM Secret Access Key
+- `GEMINI_API_KEY` - Google Gemini API 키
+- `FROM_EMAIL_ADDRESS` - SES 인증된 이메일 주소 (예: `doyoung@minami-hd.co.jp`)
+
+**Frontend 빌드용 Secrets (배포 후 설정):**
+- `VITE_COGNITO_USER_POOL_ID` - Cognito User Pool ID
+- `VITE_COGNITO_USER_POOL_CLIENT_ID` - Cognito User Pool Client ID
+
+#### 2. 코드 푸시
 
 ```bash
-# AWS CLI 설치 (macOS)
-brew install awscli
-
-# AWS 자격 증명 설정
-aws configure
-# Access Key ID 입력
-# Secret Access Key 입력
-# Default region name: ap-northeast-1 (도쿄)
-# Default output format: json
+git add .
+git commit -m "배포 테스트"
+git push origin main
 ```
 
-### 2. AWS SAM CLI 설치
+#### 3. 배포 상태 확인
+
+GitHub 저장소의 **Actions** 탭에서 배포 진행 상황을 확인할 수 있습니다.
+
+### 방법 2: 수동 배포
+
+#### 1. Backend 배포
 
 ```bash
-# macOS
-brew install aws-sam-cli
-
-# 설치 확인
-sam --version
-```
-
-## 🚀 AWS 인프라 배포
-
-### 방법 1: SAM CLI 사용 (권장)
-
-```bash
-# 1. CloudFormation 디렉토리로 이동
 cd aws/cloudformation
 
-# 2. SAM 빌드
+# 빌드
 sam build
 
-# 3. 배포 (첫 배포 시 --guided 옵션 사용)
-sam deploy --guided
-
-# 배포 시 질문에 답변:
-# - Stack Name: fate-stack (또는 원하는 이름)
-# - AWS Region: ap-northeast-1 (도쿄)
-# - Parameter Environment: dev
-# - Confirm changes before deploy: Y
-# - Allow SAM CLI IAM role creation: Y
-# - Disable rollback: N
-# - Save arguments to configuration file: Y
-```
-
-배포가 완료되면 다음 값들이 출력됩니다:
-- **ApiUrl**: API Gateway URL
-- **UserPoolId**: Cognito User Pool ID
-- **UserPoolClientId**: Cognito User Pool Client ID
-
-이 값들을 복사하세요.
-
-### 방법 2: CloudFormation 직접 배포
-
-```bash
-cd aws/cloudformation
-
-aws cloudformation create-stack \
-  --stack-name fate-stack \
-  --template-body file://template.yaml \
-  --capabilities CAPABILITY_IAM \
-  --parameters ParameterKey=Environment,ParameterValue=dev \
+# 배포
+sam deploy --parameter-overrides \
+  Environment=dev \
+  FromEmailAddress=your-email@example.com \
+  GeminiApiKey=your-gemini-api-key \
   --region ap-northeast-1
 ```
 
-배포 상태 확인:
-```bash
-aws cloudformation describe-stacks \
-  --stack-name fate-stack \
-  --region ap-northeast-1
-```
+배포 완료 후 출력되는 정보를 확인하세요:
+- `ApiUrl` - API Gateway URL
+- `UserPoolId` - Cognito User Pool ID
+- `UserPoolClientId` - Cognito User Pool Client ID
+- `FrontendBucketName` - S3 버킷 이름
+- `FrontendCloudFrontDistributionId` - CloudFront Distribution ID
+- `FrontendUrl` - CloudFront URL (프론트엔드 접속 URL)
 
-## 🔗 프론트엔드 연결 설정
+#### 2. 환경 변수 설정
 
-### 1. 환경 변수 파일 생성
-
-프로젝트 루트에 `.env` 파일을 생성합니다:
-
-```bash
-# 프로젝트 루트에서
-cp .env.example .env
-```
-
-### 2. 환경 변수 설정
-
-`.env` 파일을 열고 배포 후 받은 값들을 입력합니다:
+Backend 배포 후 출력된 정보로 `.env` 파일을 업데이트:
 
 ```env
-# API Gateway URL
-VITE_API_URL=https://abc123xyz.execute-api.ap-northeast-1.amazonaws.com/dev
-
-# Cognito 설정
 VITE_COGNITO_USER_POOL_ID=ap-northeast-1_xxxxxxxxx
 VITE_COGNITO_USER_POOL_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+VITE_API_URL=https://your-api-id.execute-api.ap-northeast-1.amazonaws.com/dev
 VITE_AWS_REGION=ap-northeast-1
 ```
 
-**환경 변수 찾는 방법:**
-- **VITE_API_URL**: SAM 배포 완료 시 출력된 `ApiUrl` 사용
-- **VITE_COGNITO_USER_POOL_ID**: SAM 배포 완료 시 출력된 `UserPoolId` 사용
-- **VITE_COGNITO_USER_POOL_CLIENT_ID**: SAM 배포 완료 시 출력된 `UserPoolClientId` 사용
-- **VITE_AWS_REGION**: AWS 리전 (예: ap-northeast-1)
-
-**API URL 찾는 방법:**
-- SAM 배포 완료 시 출력된 `ApiUrl` 사용
-- 또는 AWS 콘솔에서:
-  1. API Gateway 콘솔 접속
-  2. `fate-api-dev` API 선택
-  3. Stages > dev 선택
-  4. Invoke URL 복사
-
-### 3. 개발 서버 실행
-
-```bash
-# 의존성 설치 (처음 한 번만)
-npm install
-
-# 개발 서버 실행
-npm run dev
-```
-
-브라우저에서 `http://localhost:3000`으로 접속하여 테스트합니다.
-
-## 🧪 API 테스트
-
-### cURL로 테스트
-
-```bash
-# API URL을 환경 변수로 설정
-export API_URL="https://your-api-id.execute-api.ap-northeast-1.amazonaws.com/dev"
-
-# 사주 계산 (POST)
-curl -X POST $API_URL/fate \
-  -H "Content-Type: application/json" \
-  -d '{
-    "birthDate": "1990-01-01",
-    "birthTime": "12:00",
-    "gender": "male"
-  }'
-
-# 사주 기록 조회 (GET)
-curl -X GET $API_URL/fate
-
-# 특정 기록 조회 (GET)
-curl -X GET $API_URL/fate/{id}
-```
-
-## 📦 프로덕션 빌드
+#### 3. Frontend 빌드 및 배포
 
 ```bash
 # 빌드
 npm run build
 
-# 빌드된 파일은 dist/ 디렉토리에 생성됩니다
-# 이 파일들을 S3 + CloudFront 또는 다른 정적 호스팅 서비스에 배포하세요
+# 배포 스크립트 실행
+./deploy-frontend.sh dev
 ```
 
-## 🔄 업데이트 배포
-
-Lambda 함수나 인프라를 수정한 경우:
+또는 수동으로:
 
 ```bash
-cd aws/cloudformation
+# CloudFormation 스택에서 정보 가져오기
+STACK_NAME="fate-stack-dev"
+REGION="ap-northeast-1"
 
-# 빌드
-sam build
+BUCKET_NAME=$(aws cloudformation describe-stacks \
+  --stack-name ${STACK_NAME} \
+  --region ${REGION} \
+  --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucket`].OutputValue' \
+  --output text)
 
-# 배포 (samconfig.toml이 있으면 자동으로 설정 사용)
-sam deploy
+DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+  --stack-name ${STACK_NAME} \
+  --region ${REGION} \
+  --query 'Stacks[0].Outputs[?OutputKey==`FrontendDistributionId`].OutputValue' \
+  --output text)
+
+# S3에 업로드
+npm run build
+aws s3 sync dist/ s3://${BUCKET_NAME}/ \
+  --region ${REGION} \
+  --delete \
+  --cache-control "public, max-age=31536000, immutable" \
+  --exclude "*.html"
+
+aws s3 sync dist/ s3://${BUCKET_NAME}/ \
+  --region ${REGION} \
+  --cache-control "public, max-age=0, must-revalidate" \
+  --include "*.html"
+
+# CloudFront 캐시 무효화
+aws cloudfront create-invalidation \
+  --distribution-id ${DISTRIBUTION_ID} \
+  --paths "/*"
 ```
 
-## 🗑️ 리소스 삭제
+## 🔧 배포 설정
+
+### 환경별 배포
+
+현재 설정은 `dev` 환경입니다. 프로덕션 환경으로 배포하려면:
 
 ```bash
-cd aws/cloudformation
-
-# SAM으로 배포한 경우
-sam delete --stack-name fate-stack
-
-# 또는 CloudFormation으로 직접 삭제
-aws cloudformation delete-stack \
-  --stack-name fate-stack \
+sam deploy --parameter-overrides \
+  Environment=prod \
+  FromEmailAddress=your-email@example.com \
+  GeminiApiKey=your-gemini-api-key \
+  --stack-name fate-stack-prod \
   --region ap-northeast-1
 ```
 
-## ⚠️ 문제 해결
+### 리전 변경
 
-### CORS 오류
-- API Gateway의 CORS 설정 확인
-- Lambda 함수의 응답 헤더에 CORS 헤더 포함 확인
+기본 리전은 `ap-northeast-1` (도쿄)입니다. 다른 리전으로 변경하려면:
+
+1. `samconfig.toml` 파일 수정
+2. `template.yaml`의 리전 참조 수정
+3. SES에서 해당 리전으로 이메일 주소 인증
+
+## 📊 CloudFormation Outputs
+
+배포 완료 후 다음 정보를 확인할 수 있습니다:
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name fate-stack-dev \
+  --region ap-northeast-1 \
+  --query 'Stacks[0].Outputs'
+```
+
+주요 Outputs:
+- `ApiUrl` - API Gateway 엔드포인트
+- `UserPoolId` - Cognito User Pool ID
+- `UserPoolClientId` - Cognito User Pool Client ID
+- `FrontendBucket` - S3 버킷 이름 (프론트엔드 호스팅)
+- `FrontendDistributionId` - CloudFront Distribution ID
+- `FrontendUrl` - CloudFront URL (프론트엔드 접속 URL)
+
+## 🐛 문제 해결
+
+### "The security token included in the request is invalid" 오류
+
+**원인**: AWS 자격 증명이 잘못되었거나 만료됨
+
+**해결 방법**:
+1. GitHub Secrets 또는 로컬 AWS 자격 증명 확인
+2. IAM 사용자의 Access Key 확인
+3. Access Key가 활성화되어 있는지 확인
+4. 필요시 새 Access Key 생성
+
+### "Stack is in UPDATE_IN_PROGRESS" 오류
+
+**원인**: 이전 배포가 아직 진행 중
+
+**해결 방법**: 이전 배포가 완료될 때까지 대기 (보통 5-10분)
+
+### "S3 Bucket does not exist" 오류
+
+**원인**: SAM 배포용 S3 버킷이 없음
+
+**해결 방법**:
+```bash
+aws s3 mb s3://sam-deploy-bucket-tokyo --region ap-northeast-1
+```
+
+### Frontend 빌드 실패
+
+**원인**: 환경 변수 누락 또는 잘못된 값
+
+**해결 방법**:
+1. `.env` 파일에 모든 필수 환경 변수가 설정되었는지 확인
+2. Backend 배포 후 CloudFormation Outputs에서 올바른 값 확인
+3. 환경 변수 이름이 `VITE_` 접두사로 시작하는지 확인
 
 ### Lambda 함수 오류
-- CloudWatch Logs에서 로그 확인:
-  ```bash
-  aws logs tail /aws/lambda/fate-calculator-dev --follow
-  ```
 
-### API Gateway 403 오류
-- IAM 권한 확인
-- API Gateway 리소스 정책 확인
+**원인**: 코드 오류 또는 환경 변수 누락
 
-### 환경 변수 불러오기 실패
-- `.env` 파일이 프로젝트 루트에 있는지 확인
-- Vite는 `VITE_` 접두사가 필요합니다 (이미 설정됨)
-- 개발 서버 재시작
+**해결 방법**:
+1. CloudWatch Logs에서 오류 확인
+2. Lambda 함수 환경 변수 확인
+3. 로컬에서 Lambda 함수 테스트:
+   ```bash
+   sam local invoke FateCalculatorFunction --event event.json
+   ```
 
-## 📚 참고 자료
+## 🔄 업데이트 배포
 
-- [AWS SAM 문서](https://docs.aws.amazon.com/serverless-application-model/)
-- [API Gateway 문서](https://docs.aws.amazon.com/apigateway/)
-- [Lambda 문서](https://docs.aws.amazon.com/lambda/)
-- [DynamoDB 문서](https://docs.aws.amazon.com/dynamodb/)
+코드 변경 후 재배포:
+
+### GitHub Actions 사용
+```bash
+git add .
+git commit -m "기능 업데이트"
+git push origin main
+```
+
+### 수동 재배포
+```bash
+cd aws/cloudformation
+sam build
+sam deploy --parameter-overrides \
+  Environment=dev \
+  FromEmailAddress=your-email@example.com \
+  GeminiApiKey=your-gemini-api-key
+```
+
+Frontend만 업데이트:
+```bash
+npm run build
+./deploy-frontend.sh dev
+```
+
+## 🗑️ 스택 삭제
+
+전체 인프라를 삭제하려면:
+
+```bash
+aws cloudformation delete-stack \
+  --stack-name fate-stack-dev \
+  --region ap-northeast-1
+```
+
+**주의**: 스택 삭제 시 모든 데이터가 삭제됩니다. 필요시 백업을 수행하세요.
+
+## 📝 참고
+
+- AWS SAM CLI 문서: https://docs.aws.amazon.com/serverless-application-model/
+- CloudFormation 문서: https://docs.aws.amazon.com/cloudformation/
+- API Gateway 문서: https://docs.aws.amazon.com/apigateway/
